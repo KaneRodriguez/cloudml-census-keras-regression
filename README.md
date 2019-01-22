@@ -45,7 +45,7 @@ There are two options for the virtual environments:
 You can run the Keras code locally
 
 ```
-JOB_DIR=census_keras
+JOB_DIR=output_keras
 TRAIN_STEPS=2000
 python -m trainer.task --train-files $TRAIN_FILE \
                        --eval-files $EVAL_FILE \
@@ -58,7 +58,7 @@ python -m trainer.task --train-files $TRAIN_FILE \
 You can run Keras training using gcloud locally
 
 ```
-JOB_DIR=census_keras
+JOB_DIR=output_keras
 TRAIN_STEPS=200
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
@@ -74,16 +74,17 @@ gcloud ml-engine local train --package-path trainer \
 You can run Keras distributed training using gcloud locally
 
 ```
-JOB_DIR=census_keras_dist
+JOB_DIR=output_keras_dist
 TRAIN_STEPS=200
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
-                             --distributed
+                             --distributed \
                              -- \
                              --train-files $TRAIN_FILE \
                              --eval-files $EVAL_FILE \
                              --job-dir $JOB_DIR \
-                             --train-steps $TRAIN_STEPS
+                             --train-steps $TRAIN_STEPS \
+                             --distributed True
 ```
 
 ## Prediction using gcloud local
@@ -104,7 +105,7 @@ gcloud ml-engine local predict --model-dir=$JOB_DIR/export \
 You can train the model on Cloud ML Engine
 
 ```
-JOB_DIR=census_keras
+JOB_DIR=output_keras
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
                                     --runtime-version 1.4 \
@@ -123,7 +124,7 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode
 
 ```
-JOB_DIR=census_keras_dist
+JOB_DIR=output_keras_dist
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
                                     --runtime-version 1.4 \
@@ -135,7 +136,9 @@ gcloud ml-engine jobs submit training $JOB_NAME \
                                     -- \
                                     --train-files $GCS_TRAIN_FILE \
                                     --eval-files $GCS_EVAL_FILE \
-                                    --train-steps $TRAIN_STEPS
+                                    --train-steps $TRAIN_STEPS \
+                                    --distributed True
+
 ```
 
 ## Prediction using Cloud ML Engine

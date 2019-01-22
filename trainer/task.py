@@ -34,7 +34,7 @@ CLASS_SIZE = 4
 # to read in case the file is very large
 CHUNK_SIZE = 5000
 CHECKPOINT_FILE_PATH = 'checkpoint.{epoch:02d}-{mean_squared_error:.2f}.hdf5'
-CENSUS_MODEL = 'census.hdf5'
+CENSUS_MODEL = 'output_model.hdf5'
 
 
 class ContinuousEval(Callback):
@@ -119,6 +119,7 @@ def train_and_evaluate(args):
       model.generator_input(args.train_files, chunk_size=CHUNK_SIZE),
       steps_per_epoch=args.train_steps,
       epochs=args.num_epochs,
+      use_multiprocessing=args.distributed,
       callbacks=callbacks)
 
   # Unhappy hack to workaround h5py not being able to write to GCS.
@@ -220,6 +221,11 @@ if __name__ == '__main__':
       type=int,
       default=5,
       help='Checkpoint per n training epochs')
+  parser.add_argument(
+      '--distributed',
+      type=bool,
+      default=False,
+      help='Is this model going to be trained distributed or not')
 
   args, _ = parser.parse_known_args()
   train_and_evaluate(args)
