@@ -32,28 +32,31 @@ from tensorflow.python.saved_model import tag_constants
 from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 from tensorflow.python.lib.io import file_io
 
-# CSV columns in the input file.
-CSV_COLUMNS = ('age', 'workclass', 'fnlwgt', 'education', 'education_num',
-               'marital_status', 'occupation', 'relationship', 'race', 'gender',
-               'capital_gain', 'capital_loss', 'hours_per_week',
-               'native_country', 'income_bracket')
+# CSV columns in the input file. -- MUST INCLUDE ALL COLUMNS!
+CSV_COLUMNS = ('O1','H1','L1','C1','O2','H2','L2','C2','O3','H3','L3','C3','O4','H4','L4','C4','V1','V2','V3','V4','O5','H5','L5','C5','V5','O6','H6','L6','C6')
 
-CSV_COLUMN_DEFAULTS = [[0], [''], [0], [''], [0], [''], [''], [''], [''], [''],
-                       [0], [0], [0], [''], ['']]
+# For all categorical columns, use a [''] instead
+CSV_COLUMN_DEFAULTS = [[0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0],
+                       [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0]]
 
-# Categorical columns with vocab size
-# native_country and fnlwgt are ignored
-CATEGORICAL_COLS = (('education', 16), ('marital_status', 7),
-                    ('relationship', 6), ('workclass', 9), ('occupation', 15),
-                    ('gender', [' Male', ' Female']), ('race', 5))
+# Add categorical columns like so: CATEGORICAL_COLS = (('col title', number of categories in col), ('col2 title', number of categories in col2), . . .)
+CATEGORICAL_COLS = ()
 
-CONTINUOUS_COLS = ('education_num', 'capital_gain', 'capital_loss',
-                   'hours_per_week')
+# Note: do not add continuous columns that you want to be in the output
+CONTINUOUS_COLS = ('O1','H1','L1','C1','O2','H2','L2','C2','O3','H3','L3','C3','O4','H4','L4','C4','V1','V2','V3','V4','O5','H5','L5','C5','V5')
 
-LABEL_COLUMN = 'age'
+# These represent the columns that the model will be trained to predict
+LABEL_COLUMNS = ('O6','H6','L6','C6')
 
-UNUSED_COLUMNS = set(CSV_COLUMNS) - set(
-    list(zip(*CATEGORICAL_COLS))[0] + CONTINUOUS_COLS + (LABEL_COLUMN,))
+# Zip up and create a list of the categorical columns
+ZIPPED_CATEGORICAL_COLS = list(zip(*CATEGORICAL_COLS))
+CAT_COLS = ()
+# Check if empty, if not, use the first
+if len(ZIPPED_CATEGORICAL_COLS) > 0:
+    CAT_COLS = ZIPPED_CATEGORICAL_COLS[0]
+
+# Calculate what the unused columns are
+UNUSED_COLUMNS = set(CSV_COLUMNS) - set(CAT_COLS + CONTINUOUS_COLS + LABEL_COLUMNS)
 
 
 def model_fn(input_dim,
@@ -162,7 +165,8 @@ def generator_input(filenames, chunk_size, batch_size=64):
 
     for input_data in input_reader:
       input_data = input_data.dropna()
-      label = input_data.pop(LABEL_COLUMN)
+      # Pop off all of the columns we want to predict and concatenate them
+      labels = pd.concat([input_data.pop(x) for x in LABEL_COLUMNS], 1)
 
       input_data = to_numeric_features(input_data, feature_cols)
 
@@ -173,4 +177,4 @@ def generator_input(filenames, chunk_size, batch_size=64):
       idx_len = input_data.shape[0]
       for index in range(0, idx_len, batch_size):
         yield (input_data.iloc[index:min(idx_len, index + batch_size)],
-               label.iloc[index:min(idx_len, index + batch_size)])
+               labels.iloc[index:min(idx_len, index + batch_size)])

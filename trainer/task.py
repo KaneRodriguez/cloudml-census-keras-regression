@@ -27,8 +27,8 @@ from tensorflow.python.lib.io import file_io
 
 import trainer.model as model
 
-INPUT_SIZE = 54
-CLASS_SIZE = 1
+INPUT_SIZE = 25
+CLASS_SIZE = 4
 
 # CHUNK_SIZE specifies the number of lines
 # to read in case the file is very large
@@ -57,6 +57,7 @@ class ContinuousEval(Callback):
 
   def on_epoch_begin(self, epoch, logs={}):
     """Compile and save model."""
+
     if epoch > 0 and epoch % self.eval_frequency == 0:
       # Unhappy hack to work around h5py not being able to write to GCS.
       # Force snapshots and saves to local filesystem, then copy them over to GCS.
@@ -145,13 +146,11 @@ if __name__ == '__main__':
   parser.add_argument(
       '--train-files',
       nargs='+',
-      help='Training file local or GCS',
-      default='gs://cloud-samples-data/ml-engine/census/data/adult.data.csv')
+      help='Training file local or GCS')
   parser.add_argument(
       '--eval-files',
       nargs='+',
-      help='Evaluation file local or GCS',
-      default='gs://cloud-samples-data/ml-engine/census/data/adult.test.csv')
+      help='Evaluation file local or GCS')
   parser.add_argument(
       '--job-dir',
       type=str,

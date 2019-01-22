@@ -22,7 +22,7 @@ import sys
 from trainer import model
 
 if __name__=='__main__':
-  gen = model.generator_input(['data/adult.data.csv'], chunk_size=5000)
+  gen = model.generator_input(['data/output_test.csv'], chunk_size=5000)
   sample = gen.next()
 
   input_sample = {}
