@@ -53,7 +53,7 @@ There are two options for the virtual environments:
 You can run the Keras code locally
 
 ```
-JOB_DIR=output_keras
+JOB_DIR=$(pwd)/output_keras
 TRAIN_STEPS=2000
 python -m trainer.task --train-files $TRAIN_FILE \
                        --eval-files $EVAL_FILE \
@@ -66,7 +66,7 @@ python -m trainer.task --train-files $TRAIN_FILE \
 You can run Keras training using gcloud locally
 
 ```
-JOB_DIR=output_keras
+JOB_DIR=$(pwd)/output_keras
 TRAIN_STEPS=200
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
@@ -82,8 +82,8 @@ gcloud ml-engine local train --package-path trainer \
 You can run Keras distributed training using gcloud locally
 
 ```
-JOB_DIR=output_keras_dist
-TRAIN_STEPS=200
+JOB_DIR=$(pwd)/output_keras_dist
+TRAIN_STEPS=20
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
                              --distributed \
@@ -134,9 +134,9 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode
 
 ```
-JOB_NAME=output_keras_dist_1
+JOB_NAME=output_keras_dist_4
 OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
-TRAIN_STEPS=200
+TRAIN_STEPS=20
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
                                     --runtime-version 1.12 \

@@ -15,6 +15,8 @@
 """Implements the Keras Sequential model."""
 
 from builtins import range
+from ntpath import basename
+import os
 
 import keras
 
@@ -101,11 +103,14 @@ def compile_model(model, learning_rate):
 def to_savedmodel(model, export_path):
   """Convert the Keras HDF5 model into TensorFlow SavedModel."""
 
-  ### Allow overwriting of export_path if it already exists by removing it first..
-  if file_io.file_exists(export_path):
-    file_io.delete_recursively(export_path)
+  tmpPath = './tmp_folder'
 
-  builder = saved_model_builder.SavedModelBuilder(export_path)
+  ### Allow overwriting of export_path if it already exists by removing it first..
+  if file_io.file_exists(tmpPath):
+    # print("Need to overwrite preexisting path. Recursively deleting... ", tmpPath)
+    file_io.delete_recursively(tmpPath)
+
+  builder = saved_model_builder.SavedModelBuilder(tmpPath)
 
   signature = predict_signature_def(
       inputs={'input': model.inputs[0]}, outputs={'income': model.outputs[0]})
@@ -117,8 +122,15 @@ def to_savedmodel(model, export_path):
         signature_def_map={
             signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature
         })
-    builder.save()
 
+  # Relevant to here: http://liufuyang.github.io/2017/04/02/just-another-tensorflow-beginner-guide-4.html
+  # Also, similar hack done in task.py
+  modelSavePath = builder.save()
+
+  # Save model on to google storage
+  with file_io.FileIO(modelSavePath, mode='rb') as input_f:
+      with file_io.FileIO(os.path.join(export_path, basename(modelSavePath)), mode='w+') as output_f:
+          output_f.write(input_f.read())
 
 def to_numeric_features(features, feature_cols=None):
   """Converts the pandas input features to numeric values.

@@ -3,3 +3,4 @@ custom_keras/*
 census_keras/*
 .DS_Store
 output_keras*/*
+tmp_folder/*
