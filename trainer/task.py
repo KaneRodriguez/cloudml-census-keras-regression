@@ -27,13 +27,13 @@ from tensorflow.python.lib.io import file_io
 
 import trainer.model as model
 
-INPUT_SIZE = 55
-CLASS_SIZE = 2
+INPUT_SIZE = 54
+CLASS_SIZE = 1
 
 # CHUNK_SIZE specifies the number of lines
 # to read in case the file is very large
 CHUNK_SIZE = 5000
-CHECKPOINT_FILE_PATH = 'checkpoint.{epoch:02d}.hdf5'
+CHECKPOINT_FILE_PATH = 'checkpoint.{epoch:02d}-{mean_squared_error:.2f}.hdf5'
 CENSUS_MODEL = 'census.hdf5'
 
 
@@ -68,11 +68,11 @@ class ContinuousEval(Callback):
         checkpoints.sort()
         census_model = load_model(checkpoints[-1])
         census_model = model.compile_model(census_model, self.learning_rate)
-        loss, acc = census_model.evaluate_generator(
+        loss, mae, mse = census_model.evaluate_generator(
             model.generator_input(self.eval_files, chunk_size=CHUNK_SIZE),
             steps=self.steps)
-        print('\nEvaluation epoch[{}] metrics[{:.2f}, {:.2f}] {}'.format(
-            epoch, loss, acc, census_model.metrics_names))
+        print('\nEvaluation epoch[{}] metrics[{:.2f}, {:.2f}, {:.2f}] {}'.format(
+            epoch, loss, mae, mse, census_model.metrics_names))
         if self.job_dir.startswith('gs://'):
           copy_file_to_gcs(self.job_dir, checkpoints[-1])
       else:
@@ -97,6 +97,7 @@ def train_and_evaluate(args):
       checkpoint_path,
       monitor='val_loss',
       verbose=1,
+      save_best_only=False,
       period=args.checkpoint_epochs,
       mode='min')
 

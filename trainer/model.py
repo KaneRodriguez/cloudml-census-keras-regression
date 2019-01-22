@@ -30,6 +30,7 @@ from tensorflow.python.saved_model import builder as saved_model_builder
 from tensorflow.python.saved_model import signature_constants
 from tensorflow.python.saved_model import tag_constants
 from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
+from tensorflow.python.lib.io import file_io
 
 # CSV columns in the input file.
 CSV_COLUMNS = ('age', 'workclass', 'fnlwgt', 'education', 'education_num',
@@ -46,11 +47,10 @@ CATEGORICAL_COLS = (('education', 16), ('marital_status', 7),
                     ('relationship', 6), ('workclass', 9), ('occupation', 15),
                     ('gender', [' Male', ' Female']), ('race', 5))
 
-CONTINUOUS_COLS = ('age', 'education_num', 'capital_gain', 'capital_loss',
+CONTINUOUS_COLS = ('education_num', 'capital_gain', 'capital_loss',
                    'hours_per_week')
 
-LABELS = [' <=50K', ' >50K']
-LABEL_COLUMN = 'income_bracket'
+LABEL_COLUMN = 'age'
 
 UNUSED_COLUMNS = set(CSV_COLUMNS) - set(
     list(zip(*CATEGORICAL_COLS))[0] + CONTINUOUS_COLS + (LABEL_COLUMN,))
@@ -81,22 +81,26 @@ def model_fn(input_dim,
     model.add(layers.Dense(units=units, input_dim=input_dim, activation=relu))
     input_dim = units
 
-  # Add a dense final layer with sigmoid function.
-  model.add(layers.Dense(labels_dim, activation='sigmoid'))
+  # Add a dense final layer
+  model.add(layers.Dense(labels_dim))
   compile_model(model, learning_rate)
   return model
 
 
 def compile_model(model, learning_rate):
   model.compile(
-      loss='categorical_crossentropy',
+      loss='mse',
       optimizer=keras.optimizers.RMSprop(lr=learning_rate),
-      metrics=['accuracy'])
+      metrics=['mae', 'mse'])
   return model
 
 
 def to_savedmodel(model, export_path):
   """Convert the Keras HDF5 model into TensorFlow SavedModel."""
+
+  ### Allow overwriting of export_path if it already exists by removing it first..
+  if file_io.file_exists(export_path):
+    file_io.delete_recursively(export_path)
 
   builder = saved_model_builder.SavedModelBuilder(export_path)
 
@@ -158,7 +162,7 @@ def generator_input(filenames, chunk_size, batch_size=64):
 
     for input_data in input_reader:
       input_data = input_data.dropna()
-      label = pd.get_dummies(input_data.pop(LABEL_COLUMN))
+      label = input_data.pop(LABEL_COLUMN)
 
       input_data = to_numeric_features(input_data, feature_cols)
 
