@@ -1,21 +1,29 @@
 ### Modified Open Source Keras version of the Census sample
 
-The sample runs both as a standalone Keras code and on Cloud ML Engine.
+The sample runs both as a standalone Keras code and on Cloud ML Engine. It enables easy training of a multiple output regression Keras model with hyperparemeter tuning and distributed training.
 
 ## Assign the data
 
-The following will assign the global training and evaluation files.
+The following will assign your local and gcloud hosted training and evaluation as well as create a bucket from your current gcloud project.
 
 ```
 TRAIN_FILE=$(pwd)/data/output_train.csv
 EVAL_FILE=$(pwd)/data/output_test.csv
 
-# TODO: follow tutorial and upload train and eval file to a bucket. CHANGE
-GCS_TRAIN_FILE=gs://cloud-samples-data/ml-engine/census/data/adult.data.csv
-GCS_EVAL_FILE=gs://cloud-samples-data/ml-engine/census/data/adult.test.csv
+PROJECT_ID=$(gcloud config list project --format "value(core.project)")
+BUCKET_NAME=${PROJECT_ID}-mlengine
 
-gsutil cp $GCS_TRAIN_FILE $TRAIN_FILE
-gsutil cp $GCS_EVAL_FILE $EVAL_FILE
+REGION=us-central1
+
+gsutil mb -l $REGION gs://$BUCKET_NAME
+
+gsutil cp -r data gs://$BUCKET_NAME/data
+
+gsutil cp ../test.json gs://$BUCKET_NAME/data/test.json
+
+GCS_TRAIN_FILE=gs://$BUCKET_NAME/data/output_train.csv
+GCS_EVAL_FILE=gs://$BUCKET_NAME/data/output_test.csv
+TEST_JSON=gs://$BUCKET_NAME/data/test.json
 ```
 
 Note: Development was done on MacOS Mojave 10.14.2
@@ -92,12 +100,12 @@ gcloud ml-engine local train --package-path trainer \
 You can run prediction on the SavedModel created from Keras HDF5 model
 
 ```
-python preprocess.py sample.json
+python preprocess.py test.json
 ```
 
 ```
 gcloud ml-engine local predict --model-dir=$JOB_DIR/export \
-                               --json-instances sample.json
+                               --json-instances test.json
 ```
 
 ## Training using Cloud ML Engine
@@ -105,14 +113,16 @@ gcloud ml-engine local predict --model-dir=$JOB_DIR/export \
 You can train the model on Cloud ML Engine
 
 ```
-JOB_DIR=output_keras
+JOB_NAME=output_keras_single_1
+OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
+TRAIN_STEPS=200
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
-                                    --runtime-version 1.4 \
-                                    --job-dir $JOB_DIR \
+                                    --runtime-version 1.12 \
+                                    --job-dir $OUTPUT_PATH \
                                     --package-path trainer \
                                     --module-name trainer.task \
-                                    --region us-central1 \
+                                    --region $REGION \
                                     -- \
                                     --train-files $GCS_TRAIN_FILE \
                                     --eval-files $GCS_EVAL_FILE \
@@ -124,15 +134,17 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode
 
 ```
-JOB_DIR=output_keras_dist
+JOB_NAME=output_keras_dist_1
+OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
+TRAIN_STEPS=200
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
-                                    --runtime-version 1.4 \
-                                    --job-dir $JOB_DIR \
+                                    --runtime-version 1.12 \
+                                    --job-dir $OUTPUT_PATH \
                                     --package-path trainer \
                                     --module-name trainer.task \
-                                    --region us-central1 \
-                                    --distributed \
+                                    --region $REGION \
+                                    --scale-tier STANDARD_1 \
                                     -- \
                                     --train-files $GCS_TRAIN_FILE \
                                     --eval-files $GCS_EVAL_FILE \
@@ -147,7 +159,7 @@ You can perform prediction on Cloud ML Engine by following the steps below.
 Create a model on Cloud ML Engine
 
 ```
-gcloud ml-engine models create keras_model --regions us-central1
+gcloud ml-engine models create keras_model --regions $REGION
 ```
 
 Export the model binaries
@@ -165,14 +177,14 @@ gcloud ml-engine versions create v1 --model keras_model --origin $MODEL_BINARIES
 Create a processed sample from the data
 
 ```
-python preprocess.py sample.json
+python preprocess.py test.json
 
 ```
 
 Run the online prediction
 
 ```
-gcloud ml-engine predict --model keras_model --version v1 --json-instances sample.json
+gcloud ml-engine predict --model keras_model --version v1 --json-instances test.json
 ```
 
 ## Resources
