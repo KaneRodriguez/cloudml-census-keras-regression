@@ -4,7 +4,9 @@ This sample enables easy training of a multiple output regression Keras model wi
 
 ## Assign the data
 
-The following will assign your local and gcloud hosted training and evaluation as well as create a bucket from your current gcloud project.
+The following will assign your local and gcloud hosted training and evaluation data as well as create a bucket from your current gcloud project.
+
+Note: If you do not have a gcloud project, give [this](https://cloud.google.com/ml-engine/docs/tensorflow/getting-started-training-prediction) a read.
 
 ```
 TRAIN_FILE=$(pwd)/data/output_train.csv
