@@ -197,7 +197,7 @@ MODEL_BINARIES=$JOB_DIR/export
 Deploy the model to the prediction service
 
 ```
-gcloud ml-engine versions create v1 --model keras_model --origin $MODEL_BINARIES --runtime-version 1.2
+gcloud ml-engine versions create v1 --model keras_model --origin $MODEL_BINARIES --runtime-version 1.12
 ```
 
 Create a processed sample from the data
