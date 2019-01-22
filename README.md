@@ -1,6 +1,6 @@
 ### Modified Open Source Keras version of the Census sample
 
-The sample runs both as a standalone Keras code and on Cloud ML Engine. It enables easy training of a multiple output regression Keras model with hyperparemeter tuning and distributed training.
+This sample enables easy training of a multiple output regression Keras model with hyperparemeter tuning and distributed training, all on the Google ML Engine or locally with the gcloud sdk :)
 
 ## Assign the data
 
