@@ -83,7 +83,7 @@ You can run Keras distributed training using gcloud locally
 
 ```
 JOB_DIR=$(pwd)/output_keras_dist
-TRAIN_STEPS=20
+TRAIN_STEPS=200
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
                              --distributed \
@@ -175,7 +175,8 @@ gcloud ml-engine jobs submit training $JOB_NAME \
                                     --train-files $GCS_TRAIN_FILE \
                                     --eval-files $GCS_EVAL_FILE \
                                     --train-steps $TRAIN_STEPS \
-                                    --distributed True
+                                    --distributed True \
+                                    --hypertune True
 ```
 
 ## Prediction using Cloud ML Engine

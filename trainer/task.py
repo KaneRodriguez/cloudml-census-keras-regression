@@ -143,7 +143,19 @@ def train_and_evaluate(args):
   # The following is for hyperparameter tuning and is adapted from here: https://cloud.google.com/ml-engine/docs/tensorflow/using-hyperparameter-tuning
   # Note: the last_loss_val is updated after each checkpoint, but we only write the summary once.
   summary = Summary(value=[Summary.Value(tag='val_loss', simple_value=evaluation.last_loss_val)])
-  eval_path = os.path.join(args['job_dir'], 'val_loss')
+
+  # more hypertune info here: https://cloud.google.com/solutions/machine-learning/recommendation-system-tensorflow-train-cloud-ml-engine
+
+  job_dir = args.job_dir
+
+  if args.hypertune:
+      # if tuning, join the trial number to the output path
+      trial = json.loads(os.environ.get('TF_CONFIG', '{}')).get('task', {}).get('trial', '')
+      output_dir = os.path.join(job_dir, trial)
+  else:
+      output_dir = job_dir
+
+  eval_path = os.path.join(output_dir, 'val_loss')
   summary_writer = tf.summary.FileWriter(eval_path)
 
   # Note: adding the summary to the writer is enough for hyperparameter tuning.
@@ -244,6 +256,11 @@ if __name__ == '__main__':
       type=bool,
       default=False,
       help='Is this model going to be trained distributed or not')
+  parser.add_argument(
+      '--hypertune',
+      type=bool,
+      default=False,
+      help='Is this model going to be trained hypertuned or not')
 
   args, _ = parser.parse_known_args()
   train_and_evaluate(args)
