@@ -176,6 +176,7 @@ gcloud ml-engine jobs submit training $JOB_NAME \
                                     --eval-files $GCS_EVAL_FILE \
                                     --train-steps $TRAIN_STEPS \
                                     --distributed True
+```
 
 ## Prediction using Cloud ML Engine
 
