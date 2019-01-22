@@ -24,6 +24,8 @@ from keras.callbacks import TensorBoard
 from keras.models import load_model
 
 from tensorflow.python.lib.io import file_io
+from tensorflow.core.framework.summary_pb2 import Summary
+import tensorflow as tf
 
 import trainer.model as model
 
@@ -54,6 +56,7 @@ class ContinuousEval(Callback):
     self.learning_rate = learning_rate
     self.job_dir = job_dir
     self.steps = steps
+    self.last_loss_val = None
 
   def on_epoch_begin(self, epoch, logs={}):
     """Compile and save model."""
@@ -72,6 +75,7 @@ class ContinuousEval(Callback):
         loss, mae, mse = census_model.evaluate_generator(
             model.generator_input(self.eval_files, chunk_size=CHUNK_SIZE),
             steps=self.steps)
+        self.last_loss_val = loss
         print('\nEvaluation epoch[{}] metrics[{:.2f}, {:.2f}, {:.2f}] {}'.format(
             epoch, loss, mae, mse, census_model.metrics_names))
         if self.job_dir.startswith('gs://'):
@@ -81,7 +85,10 @@ class ContinuousEval(Callback):
 
 
 def train_and_evaluate(args):
-  census_model = model.model_fn(INPUT_SIZE, CLASS_SIZE)
+  # Showcasing the hypertuning parameters here.
+  # The first-layer-size is being tuned in this example
+  hidden_units = [args.first_layer_size, 70, 50, 20]
+  census_model = model.model_fn(INPUT_SIZE, CLASS_SIZE, hidden_units)
   try:
     os.makedirs(args.job_dir)
   except:
@@ -132,6 +139,17 @@ def train_and_evaluate(args):
 
   # Convert the Keras model to TensorFlow SavedModel.
   model.to_savedmodel(census_model, os.path.join(args.job_dir, 'export'))
+
+  # The following is for hyperparameter tuning and is adapted from here: https://cloud.google.com/ml-engine/docs/tensorflow/using-hyperparameter-tuning
+  # Note: the last_loss_val is updated after each checkpoint, but we only write the summary once.
+  summary = Summary(value=[Summary.Value(tag='val_loss', simple_value=evaluation.last_loss_val)])
+  eval_path = os.path.join(args['job_dir'], 'val_loss')
+  summary_writer = tf.summary.FileWriter(eval_path)
+
+  # Note: adding the summary to the writer is enough for hyperparameter tuning.
+  # ML Engine looks for any summary added with the hyperparameter metric tag.
+  summary_writer.add_summary(summary)
+  summary_writer.flush()
 
 
 # h5py workaround: copy local models over to GCS if the job_dir is GCS.
@@ -193,12 +211,12 @@ if __name__ == '__main__':
   parser.add_argument(
       '--first-layer-size',
       type=int,
-      default=256,
+      default=100,
       help='Number of nodes in the first layer of DNN')
   parser.add_argument(
       '--num-layers',
       type=int,
-      default=2,
+      default=4,
       help='Number of layers in DNN')
   parser.add_argument(
       '--scale-factor',

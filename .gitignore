@@ -4,3 +4,4 @@ census_keras/*
 .DS_Store
 output_keras*/*
 tmp_folder/*
+*.pyc

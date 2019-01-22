@@ -134,9 +134,9 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode
 
 ```
-JOB_NAME=output_keras_dist_4
+JOB_NAME=output_keras_dist_1
 OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
-TRAIN_STEPS=20
+TRAIN_STEPS=200
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
                                     --runtime-version 1.12 \
@@ -152,6 +152,30 @@ gcloud ml-engine jobs submit training $JOB_NAME \
                                     --distributed True
 
 ```
+
+## Distributed Training using Cloud ML Engine and Hyperparameter Tuning
+
+You can train the model on Cloud ML Engine in distributed mode and take advantage of hyperparameter tuning.
+
+```
+JOB_NAME=output_keras_htune_dist_1
+OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
+TRAIN_STEPS=200
+HPTUNING_CONFIG=hptuning_config.yaml
+gcloud ml-engine jobs submit training $JOB_NAME \
+                                    --stream-logs \
+                                    --runtime-version 1.12 \
+                                    --job-dir $OUTPUT_PATH \
+                                    --package-path trainer \
+                                    --config $HPTUNING_CONFIG \
+                                    --module-name trainer.task \
+                                    --region $REGION \
+                                    --scale-tier STANDARD_1 \
+                                    -- \
+                                    --train-files $GCS_TRAIN_FILE \
+                                    --eval-files $GCS_EVAL_FILE \
+                                    --train-steps $TRAIN_STEPS \
+                                    --distributed True
 
 ## Prediction using Cloud ML Engine
 

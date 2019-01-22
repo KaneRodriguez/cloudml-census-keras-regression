@@ -1,0 +1,12 @@
+trainingInput:
+  hyperparameters:
+    goal: MINIMIZE
+    hyperparameterMetricTag: val_loss
+    maxTrials: 4
+    maxParallelTrials: 2
+    params:
+      - parameterName: first-layer-size
+        type: INTEGER
+        minValue: 50
+        maxValue: 500
+        scaleType: UNIT_LINEAR_SCALE
