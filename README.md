@@ -69,7 +69,7 @@ You can run Keras training using gcloud locally
 
 ```
 JOB_DIR=$(pwd)/output_keras
-TRAIN_STEPS=200
+TRAIN_STEPS=2000
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
                              -- \
@@ -85,7 +85,7 @@ You can run Keras distributed training using gcloud locally
 
 ```
 JOB_DIR=$(pwd)/output_keras_dist
-TRAIN_STEPS=200
+TRAIN_STEPS=20
 gcloud ml-engine local train --package-path trainer \
                              --module-name trainer.task \
                              --distributed \
@@ -116,12 +116,12 @@ You can train the model on Cloud ML Engine
 
 ```
 JOB_NAME=output_keras_single_1
-OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
+JOB_DIR=gs://$BUCKET_NAME/$JOB_NAME
 TRAIN_STEPS=200
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
                                     --runtime-version 1.12 \
-                                    --job-dir $OUTPUT_PATH \
+                                    --job-dir $JOB_DIR \
                                     --package-path trainer \
                                     --module-name trainer.task \
                                     --region $REGION \
@@ -136,13 +136,13 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode
 
 ```
-JOB_NAME=output_keras_dist_1
-OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
-TRAIN_STEPS=200
+JOB_NAME=output_keras_dist
+JOB_DIR=gs://$BUCKET_NAME/$JOB_NAME
+TRAIN_STEPS=10
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
-                                    --runtime-version 1.12 \
-                                    --job-dir $OUTPUT_PATH \
+                                    --runtime-version 1.4 \
+                                    --job-dir $JOB_DIR \
                                     --package-path trainer \
                                     --module-name trainer.task \
                                     --region $REGION \
@@ -160,14 +160,14 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 You can train the model on Cloud ML Engine in distributed mode and take advantage of hyperparameter tuning.
 
 ```
-JOB_NAME=output_keras_htune_dist_1
-OUTPUT_PATH=gs://$BUCKET_NAME/$JOB_NAME
-TRAIN_STEPS=200
+JOB_NAME=output_keras_htune_dist_999
+JOB_DIR=gs://$BUCKET_NAME/$JOB_NAME
+TRAIN_STEPS=20
 HPTUNING_CONFIG=hptuning_config.yaml
 gcloud ml-engine jobs submit training $JOB_NAME \
                                     --stream-logs \
-                                    --runtime-version 1.12 \
-                                    --job-dir $OUTPUT_PATH \
+                                    --runtime-version 1.4 \
+                                    --job-dir $JOB_DIR \
                                     --package-path trainer \
                                     --config $HPTUNING_CONFIG \
                                     --module-name trainer.task \
@@ -187,7 +187,9 @@ You can perform prediction on Cloud ML Engine by following the steps below.
 Create a model on Cloud ML Engine
 
 ```
-gcloud ml-engine models create keras_model --regions $REGION
+MODEL_NAME=${JOB_NAME}_model
+MODEL_VERSION=v1
+gcloud ml-engine models create $MODEL_NAME --regions $REGION
 ```
 
 Export the model binaries
@@ -196,23 +198,35 @@ Export the model binaries
 MODEL_BINARIES=$JOB_DIR/export
 ```
 
+Note: If using hypertuning model:
+
+* go to the storage bucket for this project on Google Cloud Platform 
+* enter the folder for the hypertune job you want to use for prediction
+* take note of the last folder created (highest number)
+* use that number below in place of ITERATION_NUMBER
+
+```
+ITERATION_NUMBER=2
+MODEL_BINARIES=$JOB_DIR/$ITERATION_NUMBER/export
+```
+
+
 Deploy the model to the prediction service
 
 ```
-gcloud ml-engine versions create v1 --model keras_model --origin $MODEL_BINARIES --runtime-version 1.12
+gcloud ml-engine versions create $MODEL_VERSION --model $MODEL_NAME --origin $MODEL_BINARIES --runtime-version 1.4
 ```
 
 Create a processed sample from the data
 
 ```
 python preprocess.py test.json
-
 ```
 
 Run the online prediction
 
 ```
-gcloud ml-engine predict --model keras_model --version v1 --json-instances test.json
+gcloud ml-engine predict --model $MODEL_NAME --version $MODEL_VERSION --json-instances test.json --runtime-version 1.4
 ```
 
 ## Resources

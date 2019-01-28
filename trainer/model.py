@@ -33,6 +33,9 @@ from tensorflow.python.saved_model import signature_constants
 from tensorflow.python.saved_model import tag_constants
 from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 from tensorflow.python.lib.io import file_io
+from tensorflow.python.ops import variables
+from tensorflow.python.ops import lookup_ops
+from tensorflow.python.ops import control_flow_ops
 
 # CSV columns in the input file. -- MUST INCLUDE ALL COLUMNS!
 CSV_COLUMNS = ('O1','H1','L1','C1','O2','H2','L2','C2','O3','H3','L3','C3','O4','H4','L4','C4','V1','V2','V3','V4','O5','H5','L5','C5','V5','O6','H6','L6','C6')
@@ -110,7 +113,7 @@ def _save_oncloud(model, export_path):
     builder = saved_model_builder.SavedModelBuilder(tmpPath)
 
     signature = predict_signature_def(
-        inputs={'input': model.inputs[0]}, outputs={'income': model.outputs[0]})
+        inputs={'input': model.inputs[0]}, outputs={'output': model.outputs[0]})
 
     with K.get_session() as sess:
         builder.add_meta_graph_and_variables(
@@ -118,7 +121,9 @@ def _save_oncloud(model, export_path):
             tags=[tag_constants.SERVING],
             signature_def_map={
                 signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature
-            })
+            },
+            legacy_init_op=main_op()
+        )
 
     # Relevant to here: http://liufuyang.github.io/2017/04/02/just-another-tensorflow-beginner-guide-4.html
     # Also, similar hack done in task.py
@@ -141,7 +146,7 @@ def to_savedmodel(model, export_path):
       builder = saved_model_builder.SavedModelBuilder(export_path)
 
       signature = predict_signature_def(
-          inputs={'input': model.inputs[0]}, outputs={'income': model.outputs[0]})
+          inputs={'input': model.inputs[0]}, outputs={'output': model.outputs[0]})
 
       with K.get_session() as sess:
           builder.add_meta_graph_and_variables(
@@ -149,10 +154,15 @@ def to_savedmodel(model, export_path):
               tags=[tag_constants.SERVING],
               signature_def_map={
                   signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature
-              })
+              },
+              legacy_init_op=main_op()
+          )
           builder.save()
 
-
+def main_op():
+    init_local = variables.local_variables_initializer()
+    init_tables = lookup_ops.tables_initializer()
+    return control_flow_ops.group(init_local, init_tables)
 
 def to_numeric_features(features, feature_cols=None):
   """Converts the pandas input features to numeric values.
